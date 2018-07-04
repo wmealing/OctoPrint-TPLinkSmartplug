@@ -1,11 +1,7 @@
-# OctoPrint-TPLinkSmartplug
+# OctoPrint-WemoPlug
 
-Work inspired by [OctoPrint-PSUControl](https://github.com/kantlivelong/OctoPrint-PSUControl) and [TP-Link WiFi SmartPlug Client](https://github.com/softScheck/tplink-smartplug), this plugin controls a TP-Link Smartplug via OctoPrint's nav bar. 
-
-##  Screenshots
-![screenshot](screenshot.png)
-
-![screenshot](settings.png)
+Inspired by: 
+https://github.com/jneilliii/OctoPrint-TPLinkSmartplug
 
 ![screenshot](plugeditor.png)
 
@@ -14,12 +10,12 @@ Work inspired by [OctoPrint-PSUControl](https://github.com/kantlivelong/OctoPrin
 Install via the bundled [Plugin Manager](https://github.com/foosel/OctoPrint/wiki/Plugin:-Plugin-Manager)
 or manually using this URL:
 
-    https://github.com/jneilliii/OctoPrint-TPLinkSmartplug/archive/master.zip
+    https://github.com/wmealing/OctoPrint-WemoSmartplug/archive/master.zip
 
 
 ## Configuration
 
-Once installed go into settings and enter the ip address for your TP-Link Smartplug device. Adjust additional settings as needed.
+Once installed go into settings and enter the ip address for your Wemo Smartplug device. Adjust additional settings as needed.
 
 ## Settings Explained
 - **IP**
@@ -44,8 +40,8 @@ Once installed go into settings and enter the ip address for your TP-Link Smartp
 - **Cmd Off**
   - When checked will run system command configured in **System Command Off** setting after a delay in seconds configured in **System Command Off Delay**.
   
-## Support My Efforts
-I programmed this plugin for fun and do my best effort to support those that have issues with it, please return the favor and support me.
+## Support The original hacker.
+I basicallyl lifted this from jneillii, he did all the work.. donate to him , because he deserves it . 
 
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://paypal.me/jneilliii)
 
