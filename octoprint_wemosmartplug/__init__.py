@@ -10,29 +10,30 @@ import os
 import re
 import threading
 import time
+import wemo 
 
-class tplinksmartplugPlugin(octoprint.plugin.SettingsPlugin,
+class wemosmartplugPlugin(octoprint.plugin.SettingsPlugin,
                             octoprint.plugin.AssetPlugin,
                             octoprint.plugin.TemplatePlugin,
 							octoprint.plugin.SimpleApiPlugin,
 							octoprint.plugin.StartupPlugin):
 							
 	def __init__(self):
-		self._logger = logging.getLogger("octoprint.plugins.tplinksmartplug")
-		self._tplinksmartplug_logger = logging.getLogger("octoprint.plugins.tplinksmartplug.debug")
+		self._logger = logging.getLogger("octoprint.plugins.wemosmartplug")
+		self._wemosmartplug_logger = logging.getLogger("octoprint.plugins.wemosmartplug.debug")
 							
 	##~~ StartupPlugin mixin
 	
 	def on_startup(self, host, port):
 		# setup customized logger
 		from octoprint.logging.handlers import CleaningTimedRotatingFileHandler
-		tplinksmartplug_logging_handler = CleaningTimedRotatingFileHandler(self._settings.get_plugin_logfile_path(postfix="debug"), when="D", backupCount=3)
-		tplinksmartplug_logging_handler.setFormatter(logging.Formatter("[%(asctime)s] %(levelname)s: %(message)s"))
-		tplinksmartplug_logging_handler.setLevel(logging.DEBUG)
+		wemosmartplug_logging_handler = CleaningTimedRotatingFileHandler(self._settings.get_plugin_logfile_path(postfix="debug"), when="D", backupCount=3)
+		wemosmartplug_logging_handler.setFormatter(logging.Formatter("[%(asctime)s] %(levelname)s: %(message)s"))
+		wemosmartplug_logging_handler.setLevel(logging.DEBUG)
 
-		self._tplinksmartplug_logger.addHandler(tplinksmartplug_logging_handler)
-		self._tplinksmartplug_logger.setLevel(logging.DEBUG if self._settings.get_boolean(["debug_logging"]) else logging.INFO)
-		self._tplinksmartplug_logger.propagate = False
+		self._wemosmartplug_logger.addHandler(wemosmartplug_logging_handler)
+		self._wemosmartplug_logger.setLevel(logging.DEBUG if self._settings.get_boolean(["debug_logging"]) else logging.INFO)
+		self._wemosmartplug_logger.propagate = False
 	
 	def on_after_startup(self):
 		self._logger.info("TPLinkSmartplug loaded!")
@@ -55,9 +56,9 @@ class tplinksmartplugPlugin(octoprint.plugin.SettingsPlugin,
 		new_debug_logging = self._settings.get_boolean(["debug_logging"])
 		if old_debug_logging != new_debug_logging:
 			if new_debug_logging:
-				self._tplinksmartplug_logger.setLevel(logging.DEBUG)
+				self._wemosmartplug_logger.setLevel(logging.DEBUG)
 			else:
-				self._tplinksmartplug_logger.setLevel(logging.INFO)
+				self._wemosmartplug_logger.setLevel(logging.INFO)
 				
 	def get_settings_version(self):
 		return 4
@@ -65,15 +66,15 @@ class tplinksmartplugPlugin(octoprint.plugin.SettingsPlugin,
 	def on_settings_migrate(self, target, current=None):
 		if current is None or current < self.get_settings_version():
 			# Reset plug settings to defaults.
-			self._logger.debug("Resetting arrSmartplugs for tplinksmartplug settings.")
+			self._logger.debug("Resetting arrSmartplugs for wemosmartplug settings.")
 			self._settings.set(['arrSmartplugs'], self.get_settings_defaults()["arrSmartplugs"])
 		
 	##~~ AssetPlugin mixin
 
 	def get_assets(self):
 		return dict(
-			js=["js/tplinksmartplug.js"],
-			css=["css/tplinksmartplug.css"]
+			js=["js/wemosmartplug.js"],
+			css=["css/wemosmartplug.css"]
 		)
 		
 	##~~ TemplatePlugin mixin
@@ -87,9 +88,9 @@ class tplinksmartplugPlugin(octoprint.plugin.SettingsPlugin,
 	##~~ SimpleApiPlugin mixin
 	
 	def turn_on(self, plugip):
-		self._tplinksmartplug_logger.debug("Turning on %s." % plugip)
+		self._wemosmartplug_logger.debug("Turning on %s." % plugip)
 		plug = self.plug_search(self._settings.get(["arrSmartplugs"]),"ip",plugip)
-		self._tplinksmartplug_logger.debug(plug)		
+		self._wemosmartplug_logger.debug(plug)		
 		chk = self.sendCommand("on",plugip)["system"]["set_relay_state"]["err_code"]
 		if chk == 0:
 			self.check_status(plugip)
@@ -101,9 +102,9 @@ class tplinksmartplugPlugin(octoprint.plugin.SettingsPlugin,
 				t.start()
 	
 	def turn_off(self, plugip):
-		self._tplinksmartplug_logger.debug("Turning off %s." % plugip)
+		self._wemosmartplug_logger.debug("Turning off %s." % plugip)
 		plug = self.plug_search(self._settings.get(["arrSmartplugs"]),"ip",plugip)
-		self._tplinksmartplug_logger.debug(plug)
+		self._wemosmartplug_logger.debug(plug)
 		if plug["sysCmdOff"]:
 			t = threading.Timer(int(plug["sysCmdOffDelay"]),os.system,args=[plug["sysRunCmdOff"]])
 			t.start()			
@@ -115,7 +116,7 @@ class tplinksmartplugPlugin(octoprint.plugin.SettingsPlugin,
 			self.check_status(plugip)
 		
 	def check_status(self, plugip):
-		self._tplinksmartplug_logger.debug("Checking status of %s." % plugip)
+		self._wemosmartplug_logger.debug("Checking status of %s." % plugip)
 		if plugip != "":
 			response = self.sendCommand("info",plugip)
 			chk = response["system"]["get_sysinfo"]["relay_state"]
@@ -124,7 +125,7 @@ class tplinksmartplugPlugin(octoprint.plugin.SettingsPlugin,
 			elif chk == 0:
 				self._plugin_manager.send_plugin_message(self._identifier, dict(currentState="off",ip=plugip))
 			else:
-				self._tplinksmartplug_logger.debug(response)
+				self._wemosmartplug_logger.debug(response)
 				self._plugin_manager.send_plugin_message(self._identifier, dict(currentState="unknown",ip=plugip))		
 	
 	def get_api_commands(self):
@@ -149,24 +150,6 @@ class tplinksmartplugPlugin(octoprint.plugin.SettingsPlugin,
 			if item[key] == value: 
 				return item
 	
-	def encrypt(self, string):
-		key = 171
-		result = "\0\0\0"+chr(len(string))
-		for i in string: 
-			a = key ^ ord(i)
-			key = a
-			result += chr(a)
-		return result
-
-	def decrypt(self, string):
-		key = 171 
-		result = ""
-		for i in string: 
-			a = key ^ ord(i)
-			key = ord(i) 
-			result += chr(a)
-		return result
-	
 	def sendCommand(self, cmd, plugip):	
 		commands = {'info'     : '{"system":{"get_sysinfo":{}}}',
 			'on'       : '{"system":{"set_relay_state":{"state":1}}}',
@@ -185,29 +168,27 @@ class tplinksmartplugPlugin(octoprint.plugin.SettingsPlugin,
 		try:
 			socket.inet_aton(plugip)
 			ip = plugip
-			self._tplinksmartplug_logger.debug("IP %s is valid." % plugip)
+			self._wemosmartplug_logger.debug("IP %s is valid." % plugip)
 		except socket.error:
 		# try to convert hostname to ip
-			self._tplinksmartplug_logger.debug("Invalid ip %s trying hostname." % plugip)
+			self._wemosmartplug_logger.debug("Invalid ip %s trying hostname." % plugip)
 			try:
 				ip = socket.gethostbyname(plugip)
-				self._tplinksmartplug_logger.debug("Hostname %s is valid." % plugip)
+				self._wemosmartplug_logger.debug("Hostname %s is valid." % plugip)
 			except (socket.herror, socket.gaierror):
-				self._tplinksmartplug_logger.debug("Invalid hostname %s." % plugip)
+				self._wemosmartplug_logger.debug("Invalid hostname %s." % plugip)
 				return {"system":{"get_sysinfo":{"relay_state":3}}}
 				
 		try:
-			sock_tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-			sock_tcp.connect((ip, 9999))
-			sock_tcp.send(self.encrypt(commands[cmd]))
-			data = sock_tcp.recv(2048)
-			sock_tcp.close()
-			
-			self._tplinksmartplug_logger.debug("Sending command %s to %s" % (cmd,plugip))
-			self._tplinksmartplug_logger.debug(self.decrypt(data))
-			return json.loads(self.decrypt(data[4:]))
+
+			wemo_switch = wemo.switch(ip)
+			apply (wemo_switch, 
+			#FIXME: working here			
+	
+			self._wemosmartplug_logger.debug("Sending command %s to %s" % (cmd,plugip))
+			return json.loads("{}"))
 		except socket.error:
-			self._tplinksmartplug_logger.debug("Could not connect to %s." % plugip)
+			self._wemosmartplug_logger.debug("Could not connect to %s." % plugip)
 			return {"system":{"get_sysinfo":{"relay_state":3}}}
 			
 	##~~ Gcode processing hook
@@ -222,18 +203,18 @@ class tplinksmartplugPlugin(octoprint.plugin.SettingsPlugin,
 		if gcode:
 			if cmd.startswith("M80"):			
 				plugip = re.sub(r'^M80\s?', '', cmd)
-				self._tplinksmartplug_logger.debug("Received M80 command, attempting power on of %s." % plugip)
+				self._wemosmartplug_logger.debug("Received M80 command, attempting power on of %s." % plugip)
 				plug = self.plug_search(self._settings.get(["arrSmartplugs"]),"ip",plugip)
-				self._tplinksmartplug_logger.debug(plug)
+				self._wemosmartplug_logger.debug(plug)
 				if plug["gcodeEnabled"]:
 					t = threading.Timer(int(plug["gcodeOnDelay"]),self.turn_on,args=[plugip])
 					t.start()
 				return
 			elif cmd.startswith("M81"):
 				plugip = re.sub(r'^M81\s?', '', cmd)
-				self._tplinksmartplug_logger.debug("Received M81 command, attempting power off of %s." % plugip)
+				self._wemosmartplug_logger.debug("Received M81 command, attempting power off of %s." % plugip)
 				plug = self.plug_search(self._settings.get(["arrSmartplugs"]),"ip",plugip)
-				self._tplinksmartplug_logger.debug(plug)
+				self._wemosmartplug_logger.debug(plug)
 				if plug["gcodeEnabled"]:
 					t = threading.Timer(int(plug["gcodeOffDelay"]),self.gcode_turn_off,[plug])
 					t.start()
@@ -249,14 +230,14 @@ class tplinksmartplugPlugin(octoprint.plugin.SettingsPlugin,
 		# Plugin here. See https://github.com/foosel/OctoPrint/wiki/Plugin:-Software-Update
 		# for details.
 		return dict(
-			tplinksmartplug=dict(
-				displayName="TP-Link Smartplug",
+			wemosmartplug=dict(
+				displayName="Wemo Smartplug",
 				displayVersion=self._plugin_version,
 
 				# version check: github repository
 				type="github_release",
-				user="jneilliii",
-				repo="OctoPrint-TPLinkSmartplug",
+				user="wmealing",
+				repo="OctoPrint-WemoSmartPlug",
 				current=self._plugin_version,
 
 				# update method: pip
@@ -272,7 +253,7 @@ __plugin_name__ = "TP-Link Smartplug"
 
 def __plugin_load__():
 	global __plugin_implementation__
-	__plugin_implementation__ = tplinksmartplugPlugin()
+	__plugin_implementation__ = wemosmartplugPlugin()
 
 	global __plugin_hooks__
 	__plugin_hooks__ = {
