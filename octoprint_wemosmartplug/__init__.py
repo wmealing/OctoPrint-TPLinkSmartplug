@@ -10,7 +10,7 @@ import os
 import re
 import threading
 import time
-import wemo 
+import pywemo 
 
 class wemosmartplugPlugin(octoprint.plugin.SettingsPlugin,
                             octoprint.plugin.AssetPlugin,
@@ -36,7 +36,7 @@ class wemosmartplugPlugin(octoprint.plugin.SettingsPlugin,
 		self._wemosmartplug_logger.propagate = False
 	
 	def on_after_startup(self):
-		self._logger.info("TPLinkSmartplug loaded!")
+		self._logger.info("WemoSmartplug loaded!")
 	
 	##~~ SettingsPlugin mixin
 	
@@ -91,7 +91,7 @@ class wemosmartplugPlugin(octoprint.plugin.SettingsPlugin,
 		self._wemosmartplug_logger.debug("Turning on %s." % plugip)
 		plug = self.plug_search(self._settings.get(["arrSmartplugs"]),"ip",plugip)
 		self._wemosmartplug_logger.debug(plug)		
-		chk = self.sendCommand("on",plugip)["system"]["set_relay_state"]["err_code"]
+		chk = self.sendCommand("on",plugip)
 		if chk == 0:
 			self.check_status(plugip)
 			if plug["autoConnect"]:
@@ -111,21 +111,24 @@ class wemosmartplugPlugin(octoprint.plugin.SettingsPlugin,
 		if plug["autoDisconnect"]:
 			self._printer.disconnect()
 			time.sleep(int(plug["autoDisconnectDelay"]))
-		chk = self.sendCommand("off",plugip)["system"]["set_relay_state"]["err_code"]
+		chk = self.sendCommand("off",plugip)
 		if chk == 0:
 			self.check_status(plugip)
 		
 	def check_status(self, plugip):
 		self._wemosmartplug_logger.debug("Checking status of %s." % plugip)
+                
 		if plugip != "":
-			response = self.sendCommand("info",plugip)
-			chk = response["system"]["get_sysinfo"]["relay_state"]
+			chk = self.sendCommand("status",plugip)
+
 			if chk == 1:
+                                print("Setting state to on!")
 				self._plugin_manager.send_plugin_message(self._identifier, dict(currentState="on",ip=plugip))
 			elif chk == 0:
+                                print("Setting state to off")
 				self._plugin_manager.send_plugin_message(self._identifier, dict(currentState="off",ip=plugip))
 			else:
-				self._wemosmartplug_logger.debug(response)
+				self._wemosmartplug_logger.debug(chk)
 				self._plugin_manager.send_plugin_message(self._identifier, dict(currentState="unknown",ip=plugip))		
 	
 	def get_api_commands(self):
@@ -149,47 +152,42 @@ class wemosmartplugPlugin(octoprint.plugin.SettingsPlugin,
 		for item in list: 
 			if item[key] == value: 
 				return item
+                        else:
+                                self._wemosmartplug_logger.info("No plug found matching %s, incorrect IP in GCODE ?" % ( key ))
+                                return
 	
 	def sendCommand(self, cmd, plugip):	
-		commands = {'info'     : '{"system":{"get_sysinfo":{}}}',
-			'on'       : '{"system":{"set_relay_state":{"state":1}}}',
-			'off'      : '{"system":{"set_relay_state":{"state":0}}}',
-			'cloudinfo': '{"cnCloud":{"get_info":{}}}',
-			'wlanscan' : '{"netif":{"get_scaninfo":{"refresh":0}}}',
-			'time'     : '{"time":{"get_time":{}}}',
-			'schedule' : '{"schedule":{"get_rules":{}}}',
-			'countdown': '{"count_down":{"get_rules":{}}}',
-			'antitheft': '{"anti_theft":{"get_rules":{}}}',
-			'reboot'   : '{"system":{"reboot":{"delay":1}}}',
-			'reset'    : '{"system":{"reset":{"delay":1}}}'
-		}
-		
-		# try to connect via ip address
-		try:
-			socket.inet_aton(plugip)
-			ip = plugip
-			self._wemosmartplug_logger.debug("IP %s is valid." % plugip)
-		except socket.error:
-		# try to convert hostname to ip
-			self._wemosmartplug_logger.debug("Invalid ip %s trying hostname." % plugip)
-			try:
-				ip = socket.gethostbyname(plugip)
-				self._wemosmartplug_logger.debug("Hostname %s is valid." % plugip)
-			except (socket.herror, socket.gaierror):
-				self._wemosmartplug_logger.debug("Invalid hostname %s." % plugip)
-				return {"system":{"get_sysinfo":{"relay_state":3}}}
-				
 		try:
 
-			wemo_switch = wemo.switch(ip)
-			apply (wemo_switch, 
-			#FIXME: working here			
-	
-			self._wemosmartplug_logger.debug("Sending command %s to %s" % (cmd,plugip))
-			return json.loads("{}"))
+			# this is done every time because the wemo changes port, randomly.. for some reason. 
+			port = pywemo.ouimeaux_device.probe_wemo(plugip)
+			url = 'http://%s:%i/setup.xml' % (plugip, port)
+			device = pywemo.discovery.device_from_description(url, None)
+                        ret = "unset"
+			self._wemosmartplug_logger.info("Sending command %s to %s" % (cmd,plugip))
+
+                        print("Device: %s" % (dir(device)))
+            
+                        if cmd == "status":
+                                ret = device.get_state()
+                        elif cmd == "off":
+                                device.off()
+                        elif cmd == "on":
+                                # FIXME: this is kinda crappy.
+                                device.on()
+
+
+                        else:
+                                print("COMMAND WAS: %s" % ( cmd))
+                                ret = "unknown"
+
+                        print("Command was; %s" % ( cmd ))
+                        print("Return value: %s" % ( ret ))
+			return json.loads("{"system":{"get_sysinfo":{"relay_state":3}}}")
+                
 		except socket.error:
 			self._wemosmartplug_logger.debug("Could not connect to %s." % plugip)
-			return {"system":{"get_sysinfo":{"relay_state":3}}}
+                        return json.loads("{}")
 			
 	##~~ Gcode processing hook
 	
@@ -205,7 +203,6 @@ class wemosmartplugPlugin(octoprint.plugin.SettingsPlugin,
 				plugip = re.sub(r'^M80\s?', '', cmd)
 				self._wemosmartplug_logger.debug("Received M80 command, attempting power on of %s." % plugip)
 				plug = self.plug_search(self._settings.get(["arrSmartplugs"]),"ip",plugip)
-				self._wemosmartplug_logger.debug(plug)
 				if plug["gcodeEnabled"]:
 					t = threading.Timer(int(plug["gcodeOnDelay"]),self.turn_on,args=[plugip])
 					t.start()
@@ -241,7 +238,7 @@ class wemosmartplugPlugin(octoprint.plugin.SettingsPlugin,
 				current=self._plugin_version,
 
 				# update method: pip
-				pip="https://github.com/jneilliii/OctoPrint-TPLinkSmartplug/archive/{target_version}.zip"
+				pip="https://github.com/wmealing/OctoPrint-WemoSmartplug/archive/{target_version}.zip"
 			)
 		)
 
@@ -249,7 +246,7 @@ class wemosmartplugPlugin(octoprint.plugin.SettingsPlugin,
 # If you want your plugin to be registered within OctoPrint under a different name than what you defined in setup.py
 # ("OctoPrint-PluginSkeleton"), you may define that here. Same goes for the other metadata derived from setup.py that
 # can be overwritten via __plugin_xyz__ control properties. See the documentation for that.
-__plugin_name__ = "TP-Link Smartplug"
+__plugin_name__ = "Wemo Smartplug"
 
 def __plugin_load__():
 	global __plugin_implementation__
