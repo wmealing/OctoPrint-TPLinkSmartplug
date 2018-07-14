@@ -10,8 +10,7 @@ https://github.com/jneilliii/OctoPrint-TPLinkSmartplug
 Install via the bundled [Plugin Manager](https://github.com/foosel/OctoPrint/wiki/Plugin:-Plugin-Manager)
 or manually using this URL:
 
-    https://github.com/wmealing/OctoPrint-WemoSmartplug/archive/master.zip
-
+    https://github.com/wmealing/OctoPrint-WemoSmartPlug/archive/master.zip
 
 ## Configuration
 
@@ -41,7 +40,8 @@ Once installed go into settings and enter the ip address for your Wemo Smartplug
   - When checked will run system command configured in **System Command Off** setting after a delay in seconds configured in **System Command Off Delay**.
   
 ## Support The original hacker.
-I basicallyl lifted this from jneillii, he did all the work.. donate to him , because he deserves it . 
+I basicallyl lifted this from jneillii, he did all the work.. donate to him ,
+because he deserves it. Links to his paypal below.
 
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://paypal.me/jneilliii)
 
