@@ -183,7 +183,7 @@ class wemosmartplugPlugin(octoprint.plugin.SettingsPlugin,
 
                         print("Command was; %s" % ( cmd ))
                         print("Return value: %s" % ( ret ))
-			return json.loads("{"system":{"get_sysinfo":{"relay_state":3}}}")
+			return json.loads('{"system":{"get_sysinfo":{"relay_state":3}}}')
                 
 		except socket.error:
 			self._wemosmartplug_logger.debug("Could not connect to %s." % plugip)
